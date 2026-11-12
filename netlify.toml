@@ -1,0 +1,32 @@
+# Netlify deployment configuration
+# SIG Mantención Industrial — Chancador Omnicone SX 1560
+
+[build]
+  command   = "npx expo export --platform web --output-dir dist"
+  publish   = "dist"
+
+# SPA fallback: redirect all routes to index.html
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "DENY"
+    X-XSS-Protection       = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+
+# Long-term cache for Expo static bundles
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/_expo/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

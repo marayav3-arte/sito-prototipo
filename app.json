@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "industrial-maintenance-app",
+    "slug": "industrial-maintenance-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "name": "SIG Mantención Industrial",
+      "shortName": "SIG-MX",
+      "description": "Sistema de Gestión de Mantenimiento Industrial — Chancador Omnicone SX 1560",
+      "backgroundColor": "#050D1A",
+      "themeColor": "#00F0FF"
+    }
+  }
+}
