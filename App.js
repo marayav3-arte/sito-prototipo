@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { COLORS, SPACING, TYPOGRAPHY } from './src/theme';
+import { COLORS } from './src/theme';
 
 // Import Icons
 import {
-  Home, Activity, FileText, ShieldCheck,
-  BookOpen, BarChart2, Navigation, Radio, Wrench, Map,
+  Home, Activity, ShieldCheck,
+  BookOpen, BarChart2, Wrench, Map,
 } from 'lucide-react-native';
 
 
@@ -67,49 +67,12 @@ function AppNavigation() {
   return (
     <NavigationContainer theme={IndustrialNavTheme}>
       <StatusBar style="light" />
-      
-      {/* GLOBAL TOP INDUSTRIAL ACTION BAR */}
-      <View style={styles.globalTopBar}>
-        
-        {/* ROLE PROFILE SELECTOR BADGE (CLICK TO CHANGE ROLE / RETURN TO LANDING) */}
-        <TouchableOpacity
-          style={[
-            styles.roleProfileBadge,
-            activeRole === 'MANDANTE' ? styles.badgeMandante : styles.badgeOperativo
-          ]}
-          activeOpacity={0.8}
-          onPress={() => setActiveRole(null)} // Reset active role to open full-screen Landing view
-        >
-          {activeRole === 'MANDANTE' ? (
-            <ShieldCheck color={COLORS.textDark} size={14} style={{ marginRight: 4 }} />
-          ) : (
-            <Wrench color={COLORS.textDark} size={14} style={{ marginRight: 4 }} />
-          )}
-          <Text style={styles.roleProfileBadgeText}>
-            {activeRole === 'MANDANTE' ? '[ 🛡️ MANDANTE ]' : '[ 👷 OPERATIVO ]'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* TRANSVERSAL QUICK ACCESS BUTTONS */}
-        <View style={styles.quickActionGroup}>
-          
-          {/* 📻 RADIO DIRECTORY BUTTON */}
-          <TouchableOpacity
-            style={styles.headerActionBtn}
-            activeOpacity={0.8}
-            onPress={() => setRadioModalVisible(true)}
-          >
-            <Radio color={COLORS.yellow} size={14} style={{ marginRight: 4 }} />
-            <Text style={styles.headerActionBtnText}>RADIO</Text>
-          </TouchableOpacity>
-
-        </View>
-
-      </View>
 
       <Tab.Navigator
         key={activeRole}
+        initialRouteName="Inicio"
         screenOptions={({ route }) => ({
+          headerShown: false,
 
           headerStyle: {
             backgroundColor: COLORS.surface,
@@ -276,67 +239,4 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  globalTopBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#0A1017',
-    paddingHorizontal: SPACING.md,
-    paddingTop: 42, // Status bar offset for Expo web / iOS
-    paddingBottom: 8,
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#1E2D3D',
-  },
-  roleProfileBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  badgeMandante: {
-    backgroundColor: COLORS.yellow,
-  },
-  badgeOperativo: {
-    backgroundColor: '#00F0FF',
-  },
-  roleProfileBadgeText: {
-    color: COLORS.textDark,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  quickActionGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  headerActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#162331',
-    borderWidth: 1,
-    borderColor: '#2A3F55',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  headerActionBtnText: {
-    color: COLORS.yellow,
-    fontSize: 10,
-    fontWeight: '900',
-  },
-  headerActionBtnMap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.yellow,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  headerActionBtnMapText: {
-    color: COLORS.textDark,
-    fontSize: 10,
-    fontWeight: '900',
-  },
 });
