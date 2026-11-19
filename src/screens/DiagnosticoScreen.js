@@ -23,9 +23,10 @@ import {
   Octagon,
   Lightbulb,
 } from 'lucide-react-native';
-// PROMPT 51: Asset catalog for Diagnóstico → Fichas chaining
+// PROMPT 51: Asset catalog para encadenamiento Diagnóstico → Fichas
 import { getAssetByTag } from '../data/assetCatalog';
-
+// COMANDO DE VOZ (manos libres) — solo perfil OPERATIVO
+import VoiceCommandPanel from '../components/VoiceCommandPanel';
 
 export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO' }) {
   const [step, setStep] = useState(1); // 1: Select Category, 2: Select Symptom, 3: View Solution / Overheat Flow
@@ -52,6 +53,19 @@ export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO'
 
   // Plant Map Modal state
   const [showMapModal, setShowMapModal] = useState(false);
+
+  // ── Voz: callbacks para VoiceCommandPanel ─────────────────────────────────
+  const handleVoiceCategory = (categoryId) => {
+    // 'transmision' en el panel de voz mapea al id 'mecanico' en categories
+    const idMap = { transmision: 'mecanico' };
+    const resolvedId = idMap[categoryId] || categoryId;
+    const cat = categories.find(c => c.id === resolvedId);
+    if (cat) {
+      setSelectedCategory(cat);
+      setStep(2);
+    }
+  };
+  const handleVoiceOverheat = () => startOverheatDirectly();
 
   const categories = [
     { id: 'lubricacion', name: 'SISTEMA DE LUBRICACIÓN', icon: 'oil', desc: 'Depósitos, temperatura, caudal, bombas de aceite, drenaje' },
@@ -251,6 +265,14 @@ export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO'
                 Seleccione el subsistema afectado. Diseñado con botones de tamaño extendido para uso táctil rápido en terreno con guantes.
               </Text>
             </View>
+
+            {/* ── COMANDO POR VOZ — exclusivo perfil OPERATIVO ── */}
+            {activeRole === 'OPERATIVO' && (
+              <VoiceCommandPanel
+                onNavigateToCategory={handleVoiceCategory}
+                onActivateOverheat={handleVoiceOverheat}
+              />
+            )}
 
             {/* Direct Shortcut to Critical Symptom: El Chancador se sobrecalienta */}
             <TouchableOpacity

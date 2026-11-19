@@ -15,7 +15,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  TextInput, KeyboardAvoidingView, Platform,
+  TextInput, KeyboardAvoidingView, Platform, useWindowDimensions,
 } from 'react-native';
 import { Activity, BookOpen, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react-native';
 import { COLORS } from '../theme';
@@ -281,6 +281,8 @@ function TableRow({ row, ejeColor, isFirst, inputs, onInputChange }) {
 
 // ─── PESTAÑA 1: ESTADO ACTUAL ─────────────────────────────────────────────────
 function EstadoActualTab() {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   const [inputs, setInputs] = useState({});
   // selectedEje: eje activo para resaltar capa SVG (null = todos visibles)
   const [selectedEje, setSelectedEje] = useState(null);
@@ -370,10 +372,13 @@ function EstadoActualTab() {
       </View>
 
       {/* ── BODY ROW: SIDEBAR (izq) + TABLE (der) ──────────── */}
-      <View style={ss.bodyRow}>
+      <View style={[ss.bodyRow, isMobile && { flexDirection: 'column' }]}>
 
         {/* LEFT SIDEBAR: EquipmentIcon + Metadata */}
-        <View style={ss.sidebarCol}>
+        <View style={[
+          ss.sidebarCol,
+          isMobile && { width: '100%', maxHeight: 220, borderRightWidth: 0, borderBottomWidth: 1, borderBottomColor: '#1A2D45' },
+        ]}>
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 10 }}
@@ -394,9 +399,17 @@ function EstadoActualTab() {
           </ScrollView>
         </View>
 
-        {/* RIGHT: Table */}
+        {/* RIGHT: Table — ScrollView horizontal en móvil para mantener legibilidad de columnas */}
         <View style={{ flex: 1 }}>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
+          <ScrollView
+            horizontal={isMobile}
+            showsHorizontalScrollIndicator={isMobile}
+            style={{ flex: 1 }}
+          >
+            <ScrollView
+              style={isMobile ? { minWidth: 620 } : { flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 40 }}
+            >
 
             {/* Column headers */}
             <View style={ss.colHeader}>
@@ -456,6 +469,7 @@ function EstadoActualTab() {
               ))}
             </View>
 
+          </ScrollView>
           </ScrollView>
         </View>
       </View>

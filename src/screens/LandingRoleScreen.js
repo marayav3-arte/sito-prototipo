@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
 import { COLORS, SPACING, GLOVE_TARGETS } from '../theme';
 import { 
   ShieldCheck, 
@@ -18,8 +18,10 @@ import {
 import IdentityVerificationView from '../components/IdentityVerificationView';
 
 export default function LandingRoleScreen({ onSelectRole }) {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   // PROMPT 22: State to hold selected role pending identity verification
-  const [pendingRole, setPendingRole] = useState(null); // null, 'MANDANTE', or 'OPERATIVO'
+  const [pendingRole, setPendingRole] = useState(null);
 
   // If a role button has been pressed, display the Identity Verification View with dynamic color accents!
   if (pendingRole) {
@@ -84,8 +86,11 @@ export default function LandingRoleScreen({ onSelectRole }) {
           </Text>
         </View>
 
-        {/* SPACIOUS PROFILE CARDS CONTAINER (2 LARGE COLUMNS / CARDS) */}
-        <View style={styles.cardsGridContainer}>
+        {/* SPACIOUS PROFILE CARDS CONTAINER — 2 columnas en escritorio, apiladas en móvil */}
+        <View style={[
+          styles.cardsGridContainer,
+          isMobile && { flexDirection: 'column', gap: 16 },
+        ]}>
           
           {/* OPTION A: MANDANTE / DUEÑOS DE ÁREA */}
           <TouchableOpacity
@@ -301,7 +306,7 @@ const styles = StyleSheet.create({
   },
   spaciousRoleCard: {
     flex: 1,
-    minWidth: 320,
+    minWidth: 300,
     width: '100%',
     backgroundColor: '#121822',
     borderRadius: 14,
