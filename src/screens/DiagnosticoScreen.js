@@ -54,6 +54,10 @@ export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO'
   // Plant Map Modal state
   const [showMapModal, setShowMapModal] = useState(false);
 
+  // ── Modo de diagnóstico para perfil OPERATIVO ───────────────────────────
+  // null = pantalla de selección, 'voz' = modo voz, 'tactil' = árbol clásico
+  const [diagMode, setDiagMode] = useState(null);
+
   // ── Voz: callbacks para VoiceCommandPanel ─────────────────────────────────
   const handleVoiceCategory = (categoryId) => {
     // 'transmision' en el panel de voz mapea al id 'mecanico' en categories
@@ -258,21 +262,88 @@ export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO'
               </TouchableOpacity>
             </View>
 
-            <View style={styles.introContainer}>
-              <Activity color={COLORS.yellow} size={32} />
-              <Text style={styles.screenTitle}>Árbol de Diagnóstico</Text>
-              <Text style={styles.screenDesc}>
-                Seleccione el subsistema afectado. Diseñado con botones de tamaño extendido para uso táctil rápido en terreno con guantes.
-              </Text>
-            </View>
+            {/* ── SELECTOR DUAL DE MODO (solo OPERATIVO, diagMode === null) ── */}
+            {activeRole === 'OPERATIVO' && diagMode === null ? (
+              <View style={styles.dualModeContainer}>
+                <View style={styles.introContainer}>
+                  <Activity color={COLORS.yellow} size={28} />
+                  <Text style={styles.screenTitle}>Árbol de Diagnóstico</Text>
+                  <Text style={[styles.screenDesc, { textAlign: 'center' }]}>
+                    Seleccione el método de diagnóstico en terreno:
+                  </Text>
+                </View>
 
-            {/* ── COMANDO POR VOZ — exclusivo perfil OPERATIVO ── */}
-            {activeRole === 'OPERATIVO' && (
-              <VoiceCommandPanel
-                onNavigateToCategory={handleVoiceCategory}
-                onActivateOverheat={handleVoiceOverheat}
-              />
-            )}
+                {/* BLOQUE A: VOZ */}
+                <TouchableOpacity
+                  style={styles.modeCardVoz}
+                  activeOpacity={0.85}
+                  onPress={() => setDiagMode('voz')}
+                >
+                  <View style={styles.modeCardTopRow}>
+                    <View style={styles.modeIconCircleVoz}>
+                      <Text style={{ fontSize: 36 }}>🎙️</Text>
+                    </View>
+                    <View style={styles.modeCardTextBlock}>
+                      <Text style={styles.modeCardTitle}>DIAGNÓSTICO POR VOZ</Text>
+                      <Text style={styles.modeCardDesc}>
+                        Manos libres: dicte la falla o subsistema sin quitarse los guantes
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.modeBadgeVoz}>
+                    <Text style={styles.modeBadgeVozText}>TOCAR PARA DICTAR →</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* BLOQUE B: TÁCTIL */}
+                <TouchableOpacity
+                  style={styles.modeCardTactil}
+                  activeOpacity={0.85}
+                  onPress={() => setDiagMode('tactil')}
+                >
+                  <View style={styles.modeCardTopRow}>
+                    <View style={styles.modeIconCircleTactil}>
+                      <Text style={{ fontSize: 36 }}>📋</Text>
+                    </View>
+                    <View style={styles.modeCardTextBlock}>
+                      <Text style={styles.modeCardTitle}>DIAGNÓSTICO TÁCTIL</Text>
+                      <Text style={styles.modeCardDesc}>
+                        Navegación paso a paso por síntoma crítico y subsistemas del equipo
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.modeBadgeTactil}>
+                    <Text style={styles.modeBadgeTactilText}>ABRIR ÁRBOL CLÁSICO →</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            ) : activeRole === 'OPERATIVO' && diagMode === 'voz' ? (
+              /* ── MODO VOZ: pantalla dedicada con VoiceCommandPanel XXL ── */
+              <View>
+                <TouchableOpacity
+                  style={styles.modeBackBtn}
+                  onPress={() => setDiagMode(null)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.modeBackBtnText}>← VOLVER A SELECCIÓN DE MODO</Text>
+                </TouchableOpacity>
+                <VoiceCommandPanel
+                  onNavigateToCategory={(cat) => { handleVoiceCategory(cat); setDiagMode('tactil'); }}
+                  onActivateOverheat={() => { handleVoiceOverheat(); setDiagMode('tactil'); }}
+                />
+              </View>
+            ) : (
+              /* ── MODO TÁCTIL (o MANDANTE): flujo clásico intacto ── */
+              <View>
+                {activeRole === 'OPERATIVO' && diagMode === 'tactil' && (
+                  <TouchableOpacity
+                    style={styles.modeBackBtn}
+                    onPress={() => setDiagMode(null)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.modeBackBtnText}>← CAMBIAR A MODO VOZ / VOLVER</Text>
+                  </TouchableOpacity>
+                )}
 
             {/* Direct Shortcut to Critical Symptom: El Chancador se sobrecalienta */}
             <TouchableOpacity
@@ -310,6 +381,8 @@ export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO'
                 <ChevronRight color={COLORS.yellow} size={28} />
               </TouchableOpacity>
             ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -835,6 +908,124 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     paddingBottom: SPACING.xxl,
   },
+
+  // ── ARQUITECTURA DUAL: TARJETAS DE SELECCIÓN DE MODO ─────────────────────
+  dualModeContainer: {
+    gap: 16,
+    paddingHorizontal: 4,
+  },
+  // Tarjeta A: VOZ
+  modeCardVoz: {
+    backgroundColor: '#082438',
+    borderWidth: 2.5,
+    borderColor: '#06B6D4',
+    borderRadius: 16,
+    padding: 24,
+    minHeight: 165,
+    gap: 16,
+  },
+  // Tarjeta B: TÁCTIL
+  modeCardTactil: {
+    backgroundColor: '#14171D',
+    borderWidth: 2.5,
+    borderColor: '#EAB308',
+    borderRadius: 16,
+    padding: 24,
+    minHeight: 165,
+    gap: 16,
+  },
+  modeCardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18,
+  },
+  modeIconCircleVoz: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: 'rgba(6, 182, 212, 0.22)',
+    borderWidth: 2,
+    borderColor: '#06B6D4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  modeIconCircleTactil: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: 'rgba(234, 179, 8, 0.18)',
+    borderWidth: 2,
+    borderColor: '#EAB308',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  modeCardTextBlock: {
+    flex: 1,
+    gap: 6,
+  },
+  modeCardTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  modeCardDesc: {
+    color: '#CBD5E1',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  // Badges inferiores
+  modeBadgeVoz: {
+    backgroundColor: 'rgba(6, 182, 212, 0.18)',
+    borderWidth: 1.5,
+    borderColor: '#06B6D4',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modeBadgeVozText: {
+    color: '#06B6D4',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  modeBadgeTactil: {
+    backgroundColor: 'rgba(234, 179, 8, 0.15)',
+    borderWidth: 1.5,
+    borderColor: '#EAB308',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modeBadgeTactilText: {
+    color: '#EAB308',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  // Botón de regreso entre modos
+  modeBackBtn: {
+    backgroundColor: '#0D1A28',
+    borderWidth: 1,
+    borderColor: '#1E3A5A',
+    borderRadius: 10,
+    minHeight: 48,
+    marginHorizontal: 4,
+    marginBottom: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modeBackBtnText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+
   introContainer: {
     marginBottom: SPACING.xl,
   },
