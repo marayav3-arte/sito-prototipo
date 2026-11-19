@@ -129,6 +129,12 @@ const CARD   = '#0B1929';
 const TEXT   = '#CBD5E1';
 const DIM    = '#475569';
 
+const BACK_KEYWORDS = ['atras','volver','regresar','anterior','retroceder','back'];
+function detectBack(transcript) {
+  const t = normalizarTexto(transcript);
+  return BACK_KEYWORDS.some(k => t.includes(k));
+}
+
 export default function VoiceFlowPanel({ onBack, onComplete }) {
   const [stage, setStage]               = useState(1);           // 1 | 2
   const [listening, setListening]       = useState(false);
@@ -139,6 +145,7 @@ export default function VoiceFlowPanel({ onBack, onComplete }) {
   const [supported, setSupported]       = useState(true);
   const [simRunning, setSimRunning]     = useState(false);
   const [done, setDone]                 = useState(false);        // bloquea restart
+  const [goingBack, setGoingBack]       = useState(false);
 
   // ── Refs anti-closure ────────────────────────────────────────────────────
   const stageRef        = useRef(1);
@@ -171,6 +178,34 @@ export default function VoiceFlowPanel({ onBack, onComplete }) {
     if (!text || !text.trim() || doneRef.current) return;
     const currentStage = stageRef.current;
 
+    // ── PRIORIDAD: "ATRÁS" antes que cualquier subsistema o síntoma ──────────
+    if (detectBack(text)) {
+      if (currentStage === 1) {
+        // Etapa 1 → salir del modo voz por completo
+        doneRef.current = true;
+        try { recRef.current?.abort(); } catch (_) {}
+        setListening(false); stopPulse();
+        setGoingBack(true);
+        setTimeout(() => { setGoingBack(false); onBack(); }, 500);
+      } else if (currentStage === 2) {
+        // Etapa 2 → retroceder a etapa 1
+        try { recRef.current?.abort(); } catch (_) {}
+        setListening(false); stopPulse();
+        setGoingBack(true);
+        setTimeout(() => {
+          setGoingBack(false);
+          confirmedCatRef.current = null;
+          setConfirmedCat(null);
+          setConfirmedSym(null);
+          setLiveText('');
+          stageRef.current = 1;
+          setStage(1);
+          doneRef.current = false;
+        }, 500);
+      }
+      return;
+    }
+
     if (currentStage === 1) {
       const catId = matchCategory(text);
       if (!catId) return; // no reconocido → continuar escuchando
@@ -200,7 +235,7 @@ export default function VoiceFlowPanel({ onBack, onComplete }) {
       setConfirmedSym(sym);
       setFlashGreen(true);
       setLiveText('');
-      recRef.current?.abort();
+      try { recRef.current?.abort(); } catch (_) {}
       setListening(false);
       stopPulse();
       setTimeout(() => {
@@ -208,7 +243,7 @@ export default function VoiceFlowPanel({ onBack, onComplete }) {
         onComplete(catId, symId);
       }, 800);
     }
-  }, [onComplete, stopPulse]);
+  }, [onComplete, stopPulse, onBack]);
 
   // ── Crear e iniciar recognition ───────────────────────────────────────────
   const startListening = useCallback(() => {
@@ -498,18 +533,35 @@ export default function VoiceFlowPanel({ onBack, onComplete }) {
         </View>
       )}
 
-      {/* ── Simulación ───────────────────────────────────────────────────── */}
+      {/* ── Botones de simulación ─────────────────────────────────────────── */}
       {!done && (
-        <TouchableOpacity
-          style={s.simBtn}
-          onPress={runSimulation}
-          activeOpacity={0.85}
-          disabled={simRunning}
-        >
-          <Text style={s.simBtnText}>
-            {simRunning ? '⏳ SIMULANDO FLUJO...' : '⚡ SIMULAR RESPUESTA DE VOZ (PRUEBA EN TERRENO)'}
-          </Text>
-        </TouchableOpacity>
+        <View style={s.simRow}>
+          <TouchableOpacity
+            style={[s.simBtn, { flex: 1 }]}
+            onPress={runSimulation}
+            activeOpacity={0.85}
+            disabled={simRunning}
+          >
+            <Text style={s.simBtnText}>
+              {simRunning ? '⏳ SIMULANDO...' : '⚡ SIMULAR VOZ (PRUEBA)'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[s.simBtn, s.simBtnBack]}
+            onPress={() => processText('atrás')}
+            activeOpacity={0.85}
+          >
+            <Text style={[s.simBtnText, { color: '#06B6D4' }]}>↩ "ATRÁS"</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Flash "VOLVIENDO ATRÁS" */}
+      {goingBack && (
+        <View style={s.flashBack}>
+          <Text style={s.flashBackText}>↩️  VOLVIENDO ATRÁS...</Text>
+        </View>
       )}
 
     </ScrollView>
@@ -619,4 +671,19 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginTop: 4,
   },
   simBtnText: { color: AMBER, fontSize: 13, fontWeight: '700', letterSpacing: 0.4, textAlign: 'center' },
+  simRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  simBtnBack: {
+    borderColor: '#06B6D4',
+    backgroundColor: 'rgba(6,182,212,0.07)',
+    minWidth: 110, flex: 0,
+  },
+  flashBack: {
+    backgroundColor: 'rgba(6,182,212,0.18)',
+    borderWidth: 2, borderColor: '#06B6D4',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center', justifyContent: 'center',
+    minHeight: 52,
+  },
+  flashBackText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900', letterSpacing: 0.5 },
 });

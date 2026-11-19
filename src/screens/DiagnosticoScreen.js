@@ -29,6 +29,8 @@ import { getAssetByTag } from '../data/assetCatalog';
 import VoiceFlowPanel from '../components/VoiceFlowPanel';
 // COMANDO DE VOZ legacy (ya no se usa en vista VOZ, mantenido por si acaso)
 import VoiceCommandPanel from '../components/VoiceCommandPanel';
+// BANNER DE RETORNO POR VOZ en Acciones Correctivas
+import VoiceBackBanner from '../components/VoiceBackBanner';
 
 export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO' }) {
   const [step, setStep] = useState(1); // 1: Select Category, 2: Select Symptom, 3: View Solution / Overheat Flow
@@ -59,10 +61,12 @@ export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO'
   // ── Modo de diagnóstico para perfil OPERATIVO ───────────────────────────
   // null = pantalla de selección, 'voz' = modo voz, 'tactil' = árbol clásico
   const [diagMode, setDiagMode] = useState(null);
+  // Si la sesión actual fue iniciada desde VOZ (persiste en step=3)
+  const [isVoiceSession, setIsVoiceSession] = useState(false);
 
   // ── Voz: callbacks para VoiceFlowPanel ──────────────────────────────────
   const handleVoiceComplete = (categoryId, symptomId) => {
-    // Mapea al flujo táctil existente
+    setIsVoiceSession(true);  // persistir sesión de voz en step=3
     setDiagMode('tactil');
     if (symptomId === 'overheat' || categoryId === 'overheat') {
       startOverheatDirectly();
@@ -73,21 +77,27 @@ export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO'
     const cat = categories.find(c => c.id === resolvedCatId);
     if (cat) {
       setSelectedCategory(cat);
-      // Buscar el objeto completo del síntoma en el array real de symptoms
       const symList = symptoms[resolvedCatId] || [];
       const sym = symList.find(s => s.id === symptomId);
       if (sym) {
         setSelectedSymptom(sym);
-        // overheat flow especial
         if (sym.id === 'overheat' || (sym.title && (sym.title.includes('SOBRECAL') || sym.title.includes('SOBRETEMPERATURA')))) {
           startOverheatDirectly();
         } else {
           setStep(3);
         }
       } else {
-        setStep(2); // ir a selección manual de síntoma si no se encuentra
+        setStep(2);
       }
     }
+  };
+
+  // "ATRAS" desde step=3: vuelve al modo voz en etapa 2 con el mismo subsistema
+  const handleVoiceBack = () => {
+    setIsVoiceSession(false);
+    setStep(1);
+    setSelectedSymptom(null);
+    setDiagMode('voz');
   };
 
   // Legacy VoiceCommandPanel callbacks (unused in new flow, kept for safety)
@@ -439,7 +449,13 @@ export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO'
         )}
 
         {step === 3 && (
-          isOverheatFlow ? (
+          <>
+            {/* ── BANNER DE VOZ ACTIVA (solo cuando sesión fue iniciada por voz) ── */}
+            {isVoiceSession && activeRole === 'OPERATIVO' && (
+              <VoiceBackBanner onBack={handleVoiceBack} />
+            )}
+
+          {isOverheatFlow ? (
             /* =========================================================================
                STRICT SEQUENTIAL WORKFLOW: EL CHANCADOR SE SOBRECALIENTA
                ========================================================================= */
@@ -828,7 +844,8 @@ export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO'
                 </View>
               );
             })()
-          )
+          )}
+          </>
         )}
 
       </ScrollView>
