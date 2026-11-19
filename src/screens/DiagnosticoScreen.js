@@ -25,7 +25,9 @@ import {
 } from 'lucide-react-native';
 // PROMPT 51: Asset catalog para encadenamiento Diagnóstico → Fichas
 import { getAssetByTag } from '../data/assetCatalog';
-// COMANDO DE VOZ (manos libres) — solo perfil OPERATIVO
+// DIAGNÓSTICO POR VOZ (modo secuencial automático)
+import VoiceFlowPanel from '../components/VoiceFlowPanel';
+// COMANDO DE VOZ legacy (ya no se usa en vista VOZ, mantenido por si acaso)
 import VoiceCommandPanel from '../components/VoiceCommandPanel';
 
 export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO' }) {
@@ -58,16 +60,42 @@ export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO'
   // null = pantalla de selección, 'voz' = modo voz, 'tactil' = árbol clásico
   const [diagMode, setDiagMode] = useState(null);
 
-  // ── Voz: callbacks para VoiceCommandPanel ─────────────────────────────────
+  // ── Voz: callbacks para VoiceFlowPanel ──────────────────────────────────
+  const handleVoiceComplete = (categoryId, symptomId) => {
+    // Mapea al flujo táctil existente
+    setDiagMode('tactil');
+    if (symptomId === 'overheat' || categoryId === 'overheat') {
+      startOverheatDirectly();
+      return;
+    }
+    const idMap = { transmision: 'mecanico' };
+    const resolvedCatId = idMap[categoryId] || categoryId;
+    const cat = categories.find(c => c.id === resolvedCatId);
+    if (cat) {
+      setSelectedCategory(cat);
+      // Buscar el objeto completo del síntoma en el array real de symptoms
+      const symList = symptoms[resolvedCatId] || [];
+      const sym = symList.find(s => s.id === symptomId);
+      if (sym) {
+        setSelectedSymptom(sym);
+        // overheat flow especial
+        if (sym.id === 'overheat' || (sym.title && (sym.title.includes('SOBRECAL') || sym.title.includes('SOBRETEMPERATURA')))) {
+          startOverheatDirectly();
+        } else {
+          setStep(3);
+        }
+      } else {
+        setStep(2); // ir a selección manual de síntoma si no se encuentra
+      }
+    }
+  };
+
+  // Legacy VoiceCommandPanel callbacks (unused in new flow, kept for safety)
   const handleVoiceCategory = (categoryId) => {
-    // 'transmision' en el panel de voz mapea al id 'mecanico' en categories
     const idMap = { transmision: 'mecanico' };
     const resolvedId = idMap[categoryId] || categoryId;
     const cat = categories.find(c => c.id === resolvedId);
-    if (cat) {
-      setSelectedCategory(cat);
-      setStep(2);
-    }
+    if (cat) { setSelectedCategory(cat); setStep(2); }
   };
   const handleVoiceOverheat = () => startOverheatDirectly();
 
@@ -318,20 +346,11 @@ export default function DiagnosticoScreen({ navigation, activeRole = 'OPERATIVO'
                 </TouchableOpacity>
               </View>
             ) : activeRole === 'OPERATIVO' && diagMode === 'voz' ? (
-              /* ── MODO VOZ: pantalla dedicada con VoiceCommandPanel XXL ── */
-              <View>
-                <TouchableOpacity
-                  style={styles.modeBackBtn}
-                  onPress={() => setDiagMode(null)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.modeBackBtnText}>← VOLVER A SELECCIÓN DE MODO</Text>
-                </TouchableOpacity>
-                <VoiceCommandPanel
-                  onNavigateToCategory={(cat) => { handleVoiceCategory(cat); setDiagMode('tactil'); }}
-                  onActivateOverheat={() => { handleVoiceOverheat(); setDiagMode('tactil'); }}
-                />
-              </View>
+              /* ── MODO VOZ: flujo secuencial automático con VoiceFlowPanel ── */
+              <VoiceFlowPanel
+                onBack={() => setDiagMode(null)}
+                onComplete={handleVoiceComplete}
+              />
             ) : (
               /* ── MODO TÁCTIL (o MANDANTE): flujo clásico intacto ── */
               <View>
